@@ -1,0 +1,443 @@
+import React, { useState } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
+import { 
+  LayoutDashboard, 
+  Users, 
+  DollarSign, 
+  Bell,
+  Search,
+  Settings,
+  LogOut,
+  Activity,
+  Maximize2,
+  Video
+} from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Custom marker
+const customIcon = L.divIcon({
+  className: 'custom-marker',
+  html: '<div style="background: #ef4444; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>',
+  iconSize: [12, 12],
+});
+
+const ModernManagerDashboard: React.FC = () => {
+  const { user, logout } = useAuth();
+  const [activeMenu, setActiveMenu] = useState('field_officer');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const menuItems = [
+    { id: 'field_officer', label: 'Field Officer', icon: Users },
+    { id: 'financial', label: 'Financial Manager', icon: DollarSign },
+    { id: 'reports', label: 'Reports', icon: LayoutDashboard },
+    { id: 'history', label: 'History', icon: Activity },
+  ];
+
+  const rainfallData = [
+    { time: '6 AM', value: 2.1 }, { time: '7 AM', value: 2.5 }, { time: '8 AM', value: 3.2 },
+    { time: '9 AM', value: 4.5 }, { time: '10 AM', value: 5.8 }, { time: '11 AM', value: 6.2 },
+    { time: '12 PM', value: 5.5 }, { time: '1 PM', value: 4.8 }, { time: '2 PM', value: 3.9 },
+    { time: '3 PM', value: 3.2 }, { time: '4 PM', value: 2.8 }, { time: '5 PM', value: 2.3 },
+  ];
+
+  const deviceData = [
+    { day: 'Mon', value: 85 }, { day: 'Tue', value: 92 }, { day: 'Wed', value: 88 },
+    { day: 'Thu', value: 95 }, { day: 'Fri', value: 78 },
+  ];
+
+  const forecast = [
+    { date: 'Mon 11/02', icon: '☀️', high: '32°C', low: '18°C', desc: 'Sunny' },
+    { date: 'Tue 12/02', icon: '🌤️', high: '30°C', low: '17°C', desc: 'Cloudy' },
+    { date: 'Wed 13/02', icon: '🌧️', high: '28°C', low: '16°C', desc: 'Rainy' },
+    { date: 'Thu 14/02', icon: '⛈️', high: '27°C', low: '15°C', desc: 'Storms' },
+    { date: 'Fri 15/02', icon: '☀️', high: '33°C', low: '19°C', desc: 'Sunny' },
+  ];
+
+  const cattleBehavior = [
+    { label: 'Eating', value: 245, icon: '🌾', color: 'bg-green-500', percent: 35 },
+    { label: 'Resting', value: 189, icon: '😴', color: 'bg-blue-500', percent: 27 },
+    { label: 'Walking', value: 156, icon: '🚶', color: 'bg-yellow-500', percent: 22 },
+    { label: 'Active', value: 98, icon: '⚡', color: 'bg-purple-500', percent: 16 },
+  ];
+
+  const notifications = [
+    { id: 1, text: 'Cow 113 went offline at Eastern field', time: '5m ago', urgent: true },
+    { id: 2, text: 'Mid Annual Payment on cow 3', time: '1h ago', urgent: false },
+    { id: 3, text: 'Report Collected for Cow 45 at Eastern field', time: '2h ago', urgent: false },
+  ];
+
+  const mapLocations = [
+    { id: 1, name: 'North Field', lat: -13.8, lng: 33.9 },
+    { id: 2, name: 'South Field', lat: -14.1, lng: 33.7 },
+    { id: 3, name: 'Main Barn', lat: -13.95, lng: 33.8 },
+  ];
+
+  // Field Officer data
+  const fieldOfficers = [
+    { id: 1, name: 'Michael Brown', farmers: 42, inspections: 156, pending: 7, efficiency: 92 },
+    { id: 2, name: 'Sarah Johnson', farmers: 38, inspections: 142, pending: 5, efficiency: 89 },
+    { id: 3, name: 'David Wilson', farmers: 45, inspections: 168, pending: 9, efficiency: 95 },
+    { id: 4, name: 'Emily Davis', farmers: 40, inspections: 149, pending: 6, efficiency: 91 },
+  ];
+
+  // Financial data
+  const financialData = [
+    { month: 'Jan', revenue: 180000, expenses: 120000, profit: 60000 },
+    { month: 'Feb', revenue: 210000, expenses: 135000, profit: 75000 },
+    { month: 'Mar', revenue: 195000, expenses: 128000, profit: 67000 },
+    { month: 'Apr', revenue: 235000, expenses: 145000, profit: 90000 },
+    { month: 'May', revenue: 280000, expenses: 165000, profit: 115000 },
+    { month: 'Jun', revenue: 260000, expenses: 158000, profit: 102000 },
+  ];
+
+  const payments = [
+    { id: 1, farmer: 'John Doe', amount: 45000, status: 'Completed', date: '2024-02-08' },
+    { id: 2, farmer: 'Jane Smith', amount: 38000, status: 'Pending', date: '2024-02-09' },
+    { id: 3, farmer: 'Bob Wilson', amount: 52000, status: 'Completed', date: '2024-02-07' },
+    { id: 4, farmer: 'Alice Brown', amount: 41000, status: 'Processing', date: '2024-02-10' },
+  ];
+
+  // Reports data
+  const reportsData = [
+    { id: 1, title: 'Monthly Harvest Report', type: 'Harvest', date: '2024-02-05', status: 'Completed', size: '2.4 MB' },
+    { id: 2, title: 'Financial Summary Q1', type: 'Financial', date: '2024-02-03', status: 'Completed', size: '1.8 MB' },
+    { id: 3, title: 'Field Officer Performance', type: 'Performance', date: '2024-02-01', status: 'Completed', size: '3.2 MB' },
+    { id: 4, title: 'Livestock Health Report', type: 'Health', date: '2024-01-28', status: 'Completed', size: '4.1 MB' },
+  ];
+
+  // History data
+  const historyData = [
+    { id: 1, action: 'Payment Processed', user: 'Finance Manager', description: 'K45,000 to John Doe', time: '2024-02-10 14:30', type: 'payment' },
+    { id: 2, action: 'Field Inspection', user: 'Michael Brown', description: 'North Field inspection completed', time: '2024-02-10 10:15', type: 'inspection' },
+    { id: 3, action: 'Report Generated', user: 'System', description: 'Monthly harvest report created', time: '2024-02-09 16:45', type: 'report' },
+    { id: 4, action: 'New Farmer Added', user: 'Manager', description: 'Robert Taylor registered', time: '2024-02-09 09:20', type: 'farmer' },
+    { id: 5, action: 'Payment Approved', user: 'Finance Manager', description: 'K38,000 for Jane Smith', time: '2024-02-08 11:00', type: 'payment' },
+  ];
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'payment': return 'bg-green-100 text-green-800';
+      case 'inspection': return 'bg-blue-100 text-blue-800';
+      case 'report': return 'bg-purple-100 text-purple-800';
+      case 'farmer': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Completed': return 'bg-green-500';
+      case 'Pending': return 'bg-yellow-500';
+      case 'Processing': return 'bg-blue-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  return (
+    <div className="flex h-screen bg-gradient-to-br from-teal-900 via-green-800 to-teal-900 overflow-hidden">
+      {/* Sidebar */}
+      <div className="w-64 bg-gradient-to-b from-teal-900/90 to-teal-950/90 backdrop-blur-md border-r border-teal-700/50 flex flex-col">
+        <div className="p-6 border-b border-teal-700/50">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-teal-500 rounded-lg flex items-center justify-center">
+              <span className="text-white text-xl">🌾</span>
+            </div>
+            <div>
+              <h1 className="text-white font-bold text-sm">Farm Management</h1>
+              <p className="text-teal-300 text-xs">System Dashboard</p>
+            </div>
+          </div>
+        </div>
+
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeMenu === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveMenu(item.id)}
+                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all ${
+                  isActive
+                    ? 'bg-gradient-to-r from-green-500 to-teal-500 text-white shadow-lg'
+                    : 'text-teal-200 hover:bg-teal-800/50'
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+                <span className="font-medium text-sm">{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="p-4 border-t border-teal-700/50 space-y-2">
+          <button className="w-full flex items-center space-x-3 px-4 py-3 text-teal-200 hover:bg-teal-800/50 rounded-lg transition-colors">
+            <Settings className="w-5 h-5" />
+            <span className="font-medium text-sm">Settings</span>
+          </button>
+          <button 
+            onClick={logout}
+            className="w-full flex items-center space-x-3 px-4 py-3 text-red-400 hover:bg-red-900/30 rounded-lg transition-colors"
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="font-medium text-sm">Logout</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header */}
+        <header className="bg-gradient-to-r from-teal-900/80 to-green-900/80 backdrop-blur-md border-b border-teal-700/50 px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-white text-lg font-bold">AARAS Farm - Farmingall Goa</h2>
+              <p className="text-teal-300 text-sm">Saturday, 10th February 2024</p>
+            </div>
+            
+            <div className="flex-1 max-w-md mx-8">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-teal-300" />
+                <input
+                  type="text"
+                  placeholder="Type here..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-teal-900/50 border border-teal-700/50 rounded-lg pl-10 pr-4 py-2 text-white placeholder-teal-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-4">
+              <button className="relative p-2 bg-teal-800/50 hover:bg-teal-700/50 rounded-lg transition-colors">
+                <Bell className="w-5 h-5 text-white" />
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">3</span>
+              </button>
+              <button className="p-2 bg-teal-800/50 hover:bg-teal-700/50 rounded-lg transition-colors">
+                <Settings className="w-5 h-5 text-white" />
+              </button>
+              <button onClick={logout} className="p-2 bg-teal-800/50 hover:bg-teal-700/50 rounded-lg transition-colors">
+                <LogOut className="w-5 h-5 text-white" />
+              </button>
+              <div className="w-10 h-10 bg-gradient-to-r from-green-400 to-teal-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold">{user?.name?.charAt(0)?.toUpperCase() || 'M'}</span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Dashboard Grid */}
+        <main className="flex-1 overflow-y-auto p-6">
+          <div className="grid grid-cols-12 gap-4">
+            {/* Welcome Card - Row 1 */}
+            <div className="col-span-3 bg-gradient-to-br from-green-600/30 to-teal-600/30 backdrop-blur-md border border-green-500/30 rounded-2xl p-6 relative overflow-hidden">
+              <div className="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSA2MCAwIEwgMCAwIDAgNjAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] bg-repeat"></div>
+              <div className="relative z-10">
+                <h3 className="text-white text-2xl font-bold mb-2">{user?.name || 'Mark Johnson'}</h3>
+                <p className="text-green-200 text-sm mb-4">Welcome back and have a nice day!</p>
+                <button className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-medium">
+                  📊 Reports
+                </button>
+              </div>
+            </div>
+
+            {/* Weather Widget */}
+            <div className="col-span-3 bg-gradient-to-br from-teal-800/40 to-green-800/40 backdrop-blur-md border border-teal-600/30 rounded-2xl p-6">
+              <h3 className="text-teal-200 text-xs font-medium mb-2">Weather Report</h3>
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-white text-5xl font-bold mb-1">37°C</p>
+                  <p className="text-green-300 text-sm">77% Humidity</p>
+                </div>
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
+                    <span className="text-3xl">☀️</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Forecast Table */}
+            <div className="col-span-3 bg-gradient-to-br from-teal-800/40 to-green-800/40 backdrop-blur-md border border-teal-600/30 rounded-2xl p-4">
+              <h3 className="text-white font-semibold mb-3 text-sm">Forecast by Google</h3>
+              <div className="space-y-2">
+                {forecast.map((day, idx) => (
+                  <div key={idx} className="flex items-center justify-between text-xs bg-teal-900/30 rounded-lg p-2">
+                    <span className="text-teal-200 w-16">{day.date}</span>
+                    <span className="text-xl">{day.icon}</span>
+                    <div className="flex space-x-2">
+                      <span className="text-white font-medium">{day.high}</span>
+                      <span className="text-teal-300">{day.low}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Satellite Map */}
+            <div className="col-span-3 bg-gradient-to-br from-teal-800/40 to-green-800/40 backdrop-blur-md border border-teal-600/30 rounded-2xl p-3 relative">
+              <button className="absolute top-5 right-5 z-[1000] bg-teal-800/80 p-1.5 rounded-lg hover:bg-teal-700">
+                <Maximize2 className="w-4 h-4 text-white" />
+              </button>
+              <div className="h-full rounded-xl overflow-hidden">
+                <MapContainer
+                  center={[-13.95, 33.8]}
+                  zoom={11}
+                  style={{ height: '100%', width: '100%' }}
+                  scrollWheelZoom={false}
+                  zoomControl={false}
+                >
+                  <TileLayer
+                    url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                    attribution='Esri'
+                  />
+                  {mapLocations.map((loc) => (
+                    <Marker key={loc.id} position={[loc.lat, loc.lng]} icon={customIcon}>
+                      <Popup>{loc.name}</Popup>
+                    </Marker>
+                  ))}
+                </MapContainer>
+              </div>
+            </div>
+
+            {/* Rainfall Chart - Row 2 */}
+            <div className="col-span-6 bg-gradient-to-br from-teal-800/40 to-green-800/40 backdrop-blur-md border border-teal-600/30 rounded-2xl p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-white font-semibold">Rainfall (inches)</h3>
+                <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1.5 rounded-lg text-xs font-medium">
+                  Moisture Report
+                </button>
+              </div>
+              <ResponsiveContainer width="100%" height={200}>
+                <AreaChart data={rainfallData}>
+                  <defs>
+                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#1e3a8a" stopOpacity={0.2}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#2dd4bf30" />
+                  <XAxis dataKey="time" stroke="#5eead4" style={{ fontSize: '12px' }} />
+                  <YAxis stroke="#5eead4" style={{ fontSize: '12px' }} />
+                  <Tooltip contentStyle={{ backgroundColor: '#134e4a', border: 'none', borderRadius: '8px' }} />
+                  <Area type="monotone" dataKey="value" stroke="#3b82f6" fillOpacity={1} fill="url(#colorValue)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Cattle Behavior */}
+            <div className="col-span-3 bg-gradient-to-br from-teal-800/40 to-green-800/40 backdrop-blur-md border border-teal-600/30 rounded-2xl p-6">
+              <h3 className="text-white font-semibold mb-4">Cattle Behaviour</h3>
+              <div className="grid grid-cols-2 gap-4">
+                {cattleBehavior.map((item, idx) => (
+                  <div key={idx} className="bg-teal-900/40 rounded-xl p-4 text-center">
+                    <div className="text-3xl mb-2">{item.icon}</div>
+                    <div className={`w-12 h-12 ${item.color} rounded-full mx-auto mb-2 flex items-center justify-center text-white font-bold`}>
+                      {item.value}
+                    </div>
+                    <p className="text-teal-200 text-xs">{item.label}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 text-center">
+                <p className="text-white text-sm">Total Devices: <span className="font-bold">300</span></p>
+              </div>
+            </div>
+
+            {/* Notifications */}
+            <div className="col-span-3 bg-gradient-to-br from-teal-800/40 to-green-800/40 backdrop-blur-md border border-teal-600/30 rounded-2xl p-6">
+              <h3 className="text-white font-semibold mb-4">Notifications</h3>
+              <div className="space-y-3">
+                {notifications.map((notif) => (
+                  <div key={notif.id} className={`bg-teal-900/40 rounded-lg p-3 border-l-4 ${notif.urgent ? 'border-red-500' : 'border-blue-500'}`}>
+                    <p className="text-white text-xs mb-1">{notif.text}</p>
+                    <p className="text-teal-300 text-xs">{notif.time}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* CCTV Feeds - Row 3 */}
+            <div className="col-span-6 bg-gradient-to-br from-teal-800/40 to-green-800/40 backdrop-blur-md border border-teal-600/30 rounded-2xl p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-white font-semibold">CCTV</h3>
+                <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1.5 rounded-lg text-xs font-medium">
+                  View All
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                {/* Camera Feed 1 */}
+                <div className="relative rounded-xl overflow-hidden bg-gradient-to-br from-yellow-600 to-orange-600 h-40">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <Video className="w-12 h-12 text-white/50 mx-auto mb-2" />
+                      <p className="text-white text-sm">Field Camera 1</p>
+                      <span className="inline-block px-2 py-1 bg-red-500 text-white text-xs rounded-full mt-2">🔴 LIVE</span>
+                    </div>
+                  </div>
+                </div>
+                {/* Camera Feed 2 */}
+                <div className="relative rounded-xl overflow-hidden bg-gradient-to-br from-green-700 to-teal-700 h-40">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <Video className="w-12 h-12 text-white/50 mx-auto mb-2" />
+                      <p className="text-white text-sm">Barn Camera 2</p>
+                      <span className="inline-block px-2 py-1 bg-red-500 text-white text-xs rounded-full mt-2">🔴 LIVE</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Device Activity Chart */}
+            <div className="col-span-3 bg-gradient-to-br from-teal-800/40 to-green-800/40 backdrop-blur-md border border-teal-600/30 rounded-2xl p-6">
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h3 className="text-white font-semibold">Total Devices: 100</h3>
+                  <p className="text-teal-300 text-xs">Online Devices: 96</p>
+                </div>
+              </div>
+              <ResponsiveContainer width="100%" height={150}>
+                <BarChart data={deviceData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#2dd4bf30" />
+                  <XAxis dataKey="day" stroke="#5eead4" style={{ fontSize: '12px' }} />
+                  <YAxis stroke="#5eead4" style={{ fontSize: '12px' }} />
+                  <Tooltip contentStyle={{ backgroundColor: '#134e4a', border: 'none', borderRadius: '8px' }} />
+                  <Bar dataKey="value" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Quick Stats */}
+            <div className="col-span-3 bg-gradient-to-br from-teal-800/40 to-green-800/40 backdrop-blur-md border border-teal-600/30 rounded-2xl p-6">
+              <h3 className="text-white font-semibold mb-4">Quick Stats</h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-teal-200 text-sm">Active Farmers</span>
+                  <span className="text-white font-bold text-lg">248</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-teal-200 text-sm">Total Fields</span>
+                  <span className="text-white font-bold text-lg">64</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-teal-200 text-sm">Harvests (MTD)</span>
+                  <span className="text-white font-bold text-lg">89</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-teal-200 text-sm">Revenue (MTD)</span>
+                  <span className="text-green-400 font-bold text-lg">K425K</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default ModernManagerDashboard;
